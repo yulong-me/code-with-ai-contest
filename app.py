@@ -30,44 +30,56 @@ DISPLAY_COLUMNS = [
 ]
 
 QUALITY_DOMAIN = ["Excellent", "Good", "Fair", "Weak"]
-QUALITY_RANGE = ["#10b981", "#f6c343", "#fb923c", "#ef4444"]
-BAND_RANGE = ["#2563eb", "#38bdf8", "#f97316", "#7c3aed", "#14b8a6"]
-TERMINAL_RANGE = ["#2563eb", "#38bdf8", "#ef4444", "#10b981", "#a855f7"]
+QUALITY_RANGE = ["#0f9f6e", "#d6a318", "#d97706", "#dc2626"]
+BAND_RANGE = ["#1d4ed8", "#0891b2", "#d97706", "#6d28d9", "#0f766e"]
+TERMINAL_RANGE = ["#1d4ed8", "#0891b2", "#dc2626", "#0f766e", "#6d28d9"]
+CHART_AXIS_COLOR = "#536174"
+CHART_GRID_COLOR = "#d9e4ef"
+CHART_PANEL_COLOR = "#ffffff"
 
 APP_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-    --bg: #f6f8fb;
+    --bg: #eef4f7;
     --panel: #ffffff;
-    --ink: #172033;
-    --muted: #667085;
-    --line: #dbe3ef;
-    --blue: #2563eb;
-    --cyan: #0ea5e9;
-    --amber: #f59e0b;
-    --red: #ef4444;
+    --ink: #142033;
+    --muted: #536174;
+    --line: #cfdae7;
+    --blue: #1d4ed8;
+    --cyan: #0891b2;
+    --amber: #d97706;
+    --red: #dc2626;
 }
 
 .stApp {
-    background:
-        radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 34rem),
-        linear-gradient(180deg, #f8fbff 0%, var(--bg) 42%, #ffffff 100%);
+    background: var(--bg);
     color: var(--ink);
     font-family: "Fira Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 [data-testid="stSidebar"] {
-    background: #eef3f9;
+    background: #f8fafc;
     border-right: 1px solid var(--line);
 }
 
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label {
-    color: #1d2939;
+    color: var(--ink);
     font-weight: 700;
+}
+
+[data-baseweb="select"] > div {
+    border-color: var(--line);
+    background-color: #ffffff;
+}
+
+[data-baseweb="tag"] {
+    background-color: #e0f2fe !important;
+    border: 1px solid #bae6fd !important;
+    color: #075985 !important;
 }
 
 .block-container {
@@ -76,17 +88,16 @@ APP_CSS = """
 }
 
 .signal-hero {
-    border: 1px solid rgba(37, 99, 235, 0.18);
+    border: 1px solid var(--line);
     border-radius: 8px;
-    background:
-        linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(14, 165, 233, 0.05)),
-        #ffffff;
+    background: #ffffff;
     padding: 1.45rem 1.6rem 1.25rem;
     margin-bottom: 1.2rem;
+    box-shadow: 0 14px 30px rgba(20, 32, 51, 0.06);
 }
 
 .signal-eyebrow {
-    color: var(--blue);
+    color: var(--cyan);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0;
@@ -113,9 +124,9 @@ APP_CSS = """
     min-height: 112px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.92);
+    background: var(--panel);
     padding: 1rem 1.05rem;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 10px 22px rgba(20, 32, 51, 0.05);
 }
 
 .metric-label {
@@ -175,9 +186,9 @@ APP_CSS = """
 }
 
 .quality-excellent { border-top: 4px solid #10b981; }
-.quality-good { border-top: 4px solid #f6c343; }
-.quality-fair { border-top: 4px solid #fb923c; }
-.quality-weak { border-top: 4px solid #ef4444; }
+.quality-good { border-top: 4px solid #d6a318; }
+.quality-fair { border-top: 4px solid #d97706; }
+.quality-weak { border-top: 4px solid #dc2626; }
 
 [data-testid="stMetric"] {
     background: #ffffff;
@@ -296,6 +307,21 @@ def summarize_quality_counts(data: pd.DataFrame) -> dict[str, int]:
     return {quality: int(counts.get(quality, 0)) for quality in QUALITY_DOMAIN}
 
 
+def style_chart(chart: alt.Chart) -> alt.Chart:
+    return (
+        chart.properties(background=CHART_PANEL_COLOR)
+        .configure_view(stroke=CHART_GRID_COLOR)
+        .configure_axis(
+            labelColor=CHART_AXIS_COLOR,
+            titleColor=CHART_AXIS_COLOR,
+            gridColor=CHART_GRID_COLOR,
+            domainColor=CHART_GRID_COLOR,
+            tickColor=CHART_GRID_COLOR,
+        )
+        .configure_legend(labelColor=CHART_AXIS_COLOR, titleColor=CHART_AXIS_COLOR)
+    )
+
+
 @st.cache_data
 def load_signal_data(path: str) -> pd.DataFrame:
     try:
@@ -378,7 +404,7 @@ def render_column_fallback(data: pd.DataFrame) -> None:
     if top_cells.empty:
         return
 
-    st.altair_chart(
+    chart = (
         alt.Chart(top_cells)
         .mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
         .encode(
@@ -394,9 +420,9 @@ def render_column_fallback(data: pd.DataFrame) -> None:
             ),
             tooltip=DISPLAY_COLUMNS,
         )
-        .properties(height=260),
-        width="stretch",
+        .properties(height=260)
     )
+    st.altair_chart(style_chart(chart), width="stretch")
 
 
 def render_signal_scatter_map(data: pd.DataFrame) -> None:
@@ -404,7 +430,7 @@ def render_signal_scatter_map(data: pd.DataFrame) -> None:
         st.warning("没有可绘制的经纬度数据。请检查 CSV 是否为空或字段是否缺失。")
         return
 
-    st.altair_chart(
+    chart = (
         alt.Chart(data)
         .mark_circle(opacity=0.78, stroke="white", strokeWidth=0.4)
         .encode(
@@ -425,9 +451,9 @@ def render_signal_scatter_map(data: pd.DataFrame) -> None:
             ),
             tooltip=DISPLAY_COLUMNS,
         )
-        .properties(height=420),
-        width="stretch",
+        .properties(height=420)
     )
+    st.altair_chart(style_chart(chart), width="stretch")
 
 
 def render_charts(data: pd.DataFrame) -> None:
@@ -443,7 +469,7 @@ def render_charts(data: pd.DataFrame) -> None:
 
     with left:
         st.subheader("各频段基站数量")
-        st.altair_chart(
+        chart = (
             alt.Chart(band_counts)
             .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
             .encode(
@@ -455,13 +481,13 @@ def render_charts(data: pd.DataFrame) -> None:
                     scale=alt.Scale(range=BAND_RANGE),
                 ),
                 tooltip=["Band", "Count"],
-            ),
-            width="stretch",
+            )
         )
+        st.altair_chart(style_chart(chart), width="stretch")
 
     with right:
         st.subheader("终端类型占比")
-        st.altair_chart(
+        chart = (
             alt.Chart(terminal_counts)
             .mark_arc(innerRadius=45)
             .encode(
@@ -472,9 +498,9 @@ def render_charts(data: pd.DataFrame) -> None:
                     scale=alt.Scale(range=TERMINAL_RANGE),
                 ),
                 tooltip=["TerminalType", "Count"],
-            ),
-            width="stretch",
+            )
         )
+        st.altair_chart(style_chart(chart), width="stretch")
 
 
 def render_page_chrome() -> None:
