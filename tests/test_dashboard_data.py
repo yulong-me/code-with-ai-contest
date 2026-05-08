@@ -1,6 +1,11 @@
 import pandas as pd
 
-from app import filter_signal_data, prepare_signal_data, summarize_signal_data
+from app import (
+    filter_signal_data,
+    prepare_signal_data,
+    summarize_quality_counts,
+    summarize_signal_data,
+)
 
 
 def test_prepare_signal_data_handles_missing_columns_and_dirty_values():
@@ -60,3 +65,17 @@ def test_filter_signal_data_combines_band_terminal_and_rsrp_filters():
     )
 
     assert filtered["CellID"].tolist() == ["1003"]
+
+
+def test_summarize_quality_counts_returns_all_quality_buckets():
+    raw = pd.DataFrame(
+        {
+            "Latitude": [31.2, 31.3, 31.4, 31.5],
+            "Longitude": [121.4, 121.5, 121.6, 121.7],
+            "RSRP_dBm": [-80, -100, -108, -120],
+        }
+    )
+
+    counts = summarize_quality_counts(prepare_signal_data(raw))
+
+    assert counts == {"Excellent": 1, "Good": 1, "Fair": 1, "Weak": 1}
